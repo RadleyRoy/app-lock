@@ -53,6 +53,19 @@ fun IntruderLogScreen(
     contentPadding: PaddingValues,
 ) {
     var pendingDelete by remember { mutableStateOf<IntruderEvent?>(null) }
+    var viewing by remember { mutableStateOf<IntruderEvent?>(null) }
+
+    viewing?.let { event ->
+        IntruderPhotoViewer(
+            event = event,
+            photoFile = photoFile,
+            onDismiss = { viewing = null },
+            onDelete = {
+                onDelete(event.id)
+                viewing = null
+            },
+        )
+    }
 
     if (events.isEmpty()) {
         Column(
@@ -90,6 +103,7 @@ fun IntruderLogScreen(
             IntruderCard(
                 event = event,
                 photoFile = photoFile,
+                onClick = { viewing = event },
                 onLongPress = { pendingDelete = event },
             )
         }
@@ -123,6 +137,7 @@ fun IntruderLogScreen(
 private fun IntruderCard(
     event: IntruderEvent,
     photoFile: (String) -> File,
+    onClick: () -> Unit,
     onLongPress: () -> Unit,
 ) {
     // Decoded once per event; the grid recomposes on scroll and decoding a full-resolution
@@ -141,7 +156,7 @@ private fun IntruderCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(Surface1)
-            .combinedClickable(onClick = {}, onLongClick = onLongPress),
+            .combinedClickable(onClick = onClick, onLongClick = onLongPress),
     ) {
         Box(
             modifier = Modifier

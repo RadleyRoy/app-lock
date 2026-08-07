@@ -45,7 +45,6 @@ class LockActivity : FragmentActivity() {
     private var entry by mutableStateOf(PinEntry())
     private var cooldownSecondsLeft by mutableStateOf<Int?>(null)
     private var cooldownProgress by mutableStateOf(0f)
-    private var intruderCaptured by mutableStateOf(false)
     private var biometricAvailable by mutableStateOf(false)
 
     /** Guards against re-firing the prompt every time the activity is resumed behind it. */
@@ -94,7 +93,6 @@ class LockActivity : FragmentActivity() {
                         cooldownSecondsLeft = cooldownSecondsLeft,
                         cooldownProgress = cooldownProgress,
                         biometricAvailable = biometricAvailable,
-                        intruderCaptured = intruderCaptured,
                     ),
                     onDigit = ::onDigit,
                     onBackspace = { entry = entry.backspace(now()) },
@@ -104,6 +102,13 @@ class LockActivity : FragmentActivity() {
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Tells LockEnforcer not to start a lock over this one — necessary now that AppLock
+        // can protect itself.
+        ServiceLocator.lockScreenVisible = true
     }
 
     override fun onResume() {
@@ -127,6 +132,7 @@ class LockActivity : FragmentActivity() {
      */
     override fun onStop() {
         super.onStop()
+        ServiceLocator.lockScreenVisible = false
         OverlayShield.hide()
         if (!isChangingConfigurations && !isFinishing) {
             finishAndRemoveTask()
@@ -134,6 +140,7 @@ class LockActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
+        ServiceLocator.lockScreenVisible = false
         OverlayShield.hide()
         super.onDestroy()
     }
@@ -223,9 +230,8 @@ class LockActivity : FragmentActivity() {
             ),
         )
 
-        intruderCaptured = true
-        delay(3_000)
-        intruderCaptured = false
+        // Nothing is shown on screen. Announcing the capture would warn the one person who
+        // should not know it happened; the intruder log is where it surfaces instead.
     }
 
     private fun attemptsRemaining(): Int? {

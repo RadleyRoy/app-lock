@@ -20,7 +20,6 @@ class LockGateTest {
     private fun rule(policy: RelockPolicy) = RelockRule(RelockTrigger.ON_LEAVING, policy)
     private val gate = LockGate(
         sessions = sessions,
-        ownPackage = own,
         protectedPackages = { protectedPackages },
         protectionEnabled = { enabled },
     )
@@ -36,9 +35,22 @@ class LockGateTest {
     }
 
     @Test
-    fun `our own package never locks`() {
-        // The lock screen is itself a foreground activity; locking it would recurse forever.
+    fun `AppLock can protect itself`() {
+        // The gate no longer exempts our own package. Keeping the *lock screen* from locking
+        // itself is LockEnforcer's job, because that needs the window's class name and the gate
+        // only ever sees packages.
+        assertFalse(gate.shouldLock(own), "not protected yet")
+
         protectedPackages = setOf(instagram, own)
+
+        assertTrue(gate.shouldLock(own), "AppLock must be lockable like any other app")
+    }
+
+    @Test
+    fun `unlocking AppLock lets it through like any other app`() {
+        protectedPackages = setOf(own)
+        sessions.grant(own, rule(RelockPolicy.UNTIL_SCREEN_OFF))
+
         assertFalse(gate.shouldLock(own))
     }
 
@@ -81,13 +93,16 @@ class LockGateTest {
     }
 
     @Test
-    fun `our own package coming forward does not end the protected app's session`() {
+    fun `AppLock's own UI coming forward is a real app switch`() {
         sessions.grant(instagram, rule(RelockPolicy.IMMEDIATELY))
         gate.onForegroundPackage(instagram)
 
-        // The lock screen appearing must not count as "you left Instagram".
+        // Opening AppLock's main screen genuinely means you left Instagram, so the session
+        // ends. The one window that must NOT reach here is the lock screen itself — that is
+        // filtered by LockEnforcer on the class name, before the gate is ever consulted,
+        // because the gate only ever sees package names.
         gate.onForegroundPackage(own)
 
-        assertFalse(gate.shouldLock(instagram))
+        assertTrue(gate.shouldLock(instagram))
     }
 }

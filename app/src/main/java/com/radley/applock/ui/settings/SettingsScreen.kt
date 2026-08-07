@@ -298,11 +298,17 @@ private fun Section(title: String) {
     )
 }
 
+/**
+ * Spacing lives on the card, not between call sites. Section() only supplies padding above a
+ * *header*, so two cards with no header between them used to sit flush against each other —
+ * fixing it here means the next adjacent pair cannot reintroduce the gap.
+ */
 @Composable
 private fun SettingCard(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(bottom = 12.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Surface1)
             .padding(18.dp),

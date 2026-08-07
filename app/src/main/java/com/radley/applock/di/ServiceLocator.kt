@@ -37,11 +37,18 @@ object ServiceLocator {
     val lockGate: LockGate by lazy {
         LockGate(
             sessions = sessions,
-            ownPackage = appContext.packageName,
             protectedPackages = { lockedPackages },
             protectionEnabled = { protectionEnabled },
         )
     }
+
+    /**
+     * True while the lock screen is on screen. Read by [com.radley.applock.lock.LockEnforcer]
+     * to refuse starting a lock over a lock — which matters now that AppLock can protect
+     * itself, and also stops the two detectors racing to launch the same lock twice.
+     */
+    @Volatile
+    var lockScreenVisible: Boolean = false
 
     @Volatile
     var lockedPackages: Set<String> = emptySet()

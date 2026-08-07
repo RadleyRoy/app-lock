@@ -1,13 +1,10 @@
 package com.radley.applock.ui.lock
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,21 +27,24 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,6 +56,8 @@ import com.radley.applock.ui.theme.Ember
 import com.radley.applock.ui.theme.Ink
 import com.radley.applock.ui.theme.Slate
 import com.radley.applock.ui.theme.Surface1
+import com.radley.applock.ui.theme.Taupe
+import kotlinx.coroutines.delay
 
 /** Everything the lock screen needs to render, so it can be previewed without a real lock. */
 data class LockScreenState(
@@ -66,9 +68,24 @@ data class LockScreenState(
     val cooldownSecondsLeft: Int?,
     val cooldownProgress: Float,
     val biometricAvailable: Boolean,
-    val intruderCaptured: Boolean,
 )
 
+/**
+ * The lock screen — "Grace".
+ *
+ * The success path is deliberately unremarkable and unchanged. What this design reworks is
+ * **failure**, on the argument that a security app earns or loses trust there: shaking the
+ * screen at someone who mistyped their own PIN treats a slip like a break-in.
+ *
+ * So: the keypad settles rather than shakes, the dots dissolve rather than flash red, the
+ * message stays warm rather than turning to error colour, and the lockout is an ember cooling
+ * instead of a countdown scolding you. The fingerprint stays visibly live throughout, which is
+ * the single most useful fact during a lockout.
+ *
+ * The one thing deliberately *not* softened is the failure haptic in [Haptics.failure] — with
+ * no shake, that sharp double buzz is what tells you the entry failed even if you were not
+ * looking at the screen.
+ */
 @Composable
 fun LockScreen(
     state: LockScreenState,
@@ -121,14 +138,15 @@ fun LockScreen(
             ) {
                 AppBadge(
                     icon = state.appIcon,
-                    cooldownProgress = if (inCooldown) state.cooldownProgress else 0f,
+                    cooldownSecondsLeft = state.cooldownSecondsLeft,
+                    cooldownProgress = state.cooldownProgress,
                 )
 
                 Spacer(Modifier.height(20.dp))
 
                 Text(
                     text = state.appLabel,
-                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     color = Bone,
                     textAlign = TextAlign.Center,
                 )
@@ -137,8 +155,9 @@ fun LockScreen(
 
                 Text(
                     text = promptFor(state),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    color = if (state.entry.error || inCooldown) Ember else Ash,
+                    style = MaterialTheme.typography.bodyMedium,
+                    // Taupe rather than an error colour: a mistyped PIN is a slip, not an alarm.
+                    color = if (state.entry.error || inCooldown) Taupe else Ash,
                     textAlign = TextAlign.Center,
                 )
 
@@ -149,29 +168,9 @@ fun LockScreen(
                     filled = state.entry.digits.length,
                     error = state.entry.error,
                 )
-
-                AnimatedVisibility(
-                    visible = state.intruderCaptured,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                ) {
-                    Text(
-                        text = "Photo saved",
-                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                        color = Slate,
-                        modifier = Modifier.padding(top = 20.dp),
-                    )
-                }
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(Surface1.copy(alpha = 0.55f))
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(horizontal = 20.dp, vertical = 22.dp),
-            ) {
+            SettlingSheet(settleOn = state.entry.error) {
                 PinKeypad(
                     onDigit = onDigit,
                     onBackspace = onBackspace,
@@ -186,99 +185,154 @@ fun LockScreen(
 }
 
 private fun promptFor(state: LockScreenState): String = when {
-    state.cooldownSecondsLeft != null ->
-        "Too many attempts · wait ${state.cooldownSecondsLeft}s, or use your fingerprint"
+    state.cooldownSecondsLeft != null -> "Taking a breath. Your fingerprint still opens it."
 
-    state.entry.error && state.attemptsRemaining != null ->
-        "Wrong PIN · ${state.attemptsRemaining} ${if (state.attemptsRemaining == 1) "attempt" else "attempts"} left"
+    // The last attempt before the cooldown gets a softer warning than a countdown of failures.
+    state.entry.error && state.attemptsRemaining == 1 -> "Let's pause for a moment."
 
-    state.entry.error -> "Wrong PIN"
+    state.entry.error -> "That wasn't it. Fingerprint still works."
+
     else -> "Enter PIN to open"
 }
 
-/** App icon on a clay disc, with the cooldown countdown drawn as a ring around it. */
+/**
+ * The keypad sheet. On a wrong PIN it drops a notch and comes back — a drawer that would not
+ * latch — rather than shaking, which reads as an accusation.
+ */
 @Composable
-private fun AppBadge(icon: ImageBitmap?, cooldownProgress: Float) {
-    val progress by animateFloatAsState(targetValue = cooldownProgress, label = "cooldown")
+private fun SettlingSheet(settleOn: Boolean, content: @Composable () -> Unit) {
+    val settle = remember { Animatable(0f) }
 
-    Box(contentAlignment = Alignment.Center) {
-        if (progress > 0f) {
-            Canvas(modifier = Modifier.size(108.dp)) {
-                drawArc(
-                    color = Ember,
-                    startAngle = -90f,
-                    sweepAngle = 360f * progress,
-                    useCenter = false,
-                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+    LaunchedEffect(settleOn) {
+        if (!settleOn) {
+            settle.snapTo(0f)
+            return@LaunchedEffect
+        }
+        settle.animateTo(
+            targetValue = 0f,
+            animationSpec = keyframes {
+                durationMillis = 500
+                0f at 0
+                9f at 200
+                0f at 500
+            },
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { translationY = settle.value * density }
+            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+            .background(Surface1.copy(alpha = 0.55f))
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(horizontal = 20.dp, vertical = 22.dp),
+    ) { content() }
+}
+
+/**
+ * App icon on a clay disc. During a lockout the icon gives way to an ember that **cools** as
+ * the countdown runs — desaturating toward slate rather than pulsing red, so the wait reads as
+ * a pause rather than a punishment.
+ */
+@Composable
+private fun AppBadge(icon: ImageBitmap?, cooldownSecondsLeft: Int?, cooldownProgress: Float) {
+    val inCooldown = cooldownSecondsLeft != null
+    val progress by animateFloatAsState(
+        targetValue = if (inCooldown) cooldownProgress else 0f,
+        animationSpec = tween(durationMillis = 300, easing = LinearEasing),
+        label = "cooldown",
+    )
+    val iconAlpha by animateFloatAsState(
+        targetValue = if (inCooldown) 0f else 1f,
+        animationSpec = tween(durationMillis = 450),
+        label = "iconFade",
+    )
+
+    Box(modifier = Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+
+        if (inCooldown) {
+            // Cools from ember toward slate as `progress` falls to zero.
+            val core = lerp(Slate, Ember, progress.coerceIn(0f, 1f))
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(core, Cocoa.copy(alpha = 0.55f), Color.Transparent),
+                            radius = 150f,
+                        ),
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = cooldownSecondsLeft.toString(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Bone,
                 )
             }
         }
 
-        Box(
-            modifier = Modifier
-                .size(88.dp)
-                .clip(CircleShape)
-                .background(Clay.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (icon != null) {
-                androidx.compose.foundation.Image(
-                    bitmap = icon,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.size(52.dp),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.Lock,
-                    contentDescription = null,
-                    tint = Clay,
-                    modifier = Modifier.size(36.dp),
-                )
+        if (iconAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .alpha(iconAlpha)
+                    .clip(CircleShape)
+                    .background(Clay.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (icon != null) {
+                    androidx.compose.foundation.Image(
+                        bitmap = icon,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(52.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = null,
+                        tint = Clay,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
             }
         }
     }
 }
 
+/**
+ * On failure the filled dots go out one at a time, 90ms apart, instead of turning red — the
+ * attempt visibly unwinds rather than being rejected.
+ */
 @Composable
 private fun PinDots(length: Int, filled: Int, error: Boolean) {
-    val shake = remember { Animatable(0f) }
+    var dissolvedTo by remember { mutableIntStateOf(filled) }
 
-    LaunchedEffect(error) {
-        if (error) {
-            shake.animateTo(
-                targetValue = 0f,
-                animationSpec = keyframes {
-                    durationMillis = 320
-                    0f at 0
-                    -14f at 50
-                    14f at 110
-                    -9f at 170
-                    9f at 230
-                    0f at 320
-                },
-            )
-        } else {
-            shake.snapTo(0f)
+    LaunchedEffect(error, filled) {
+        if (!error) {
+            dissolvedTo = filled
+            return@LaunchedEffect
+        }
+        dissolvedTo = filled
+        for (remaining in filled - 1 downTo 0) {
+            delay(90)
+            dissolvedTo = remaining
         }
     }
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.graphicsLayer { translationX = shake.value },
-    ) {
+    val shown = if (error) dissolvedTo else filled
+
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         repeat(length) { index ->
-            val isFilled = index < filled
             Box(
                 modifier = Modifier
                     .size(13.dp)
                     .clip(CircleShape)
                     .background(
-                        when {
-                            error && isFilled -> Ember
-                            isFilled -> Clay
-                            else -> Slate.copy(alpha = 0.35f)
-                        },
+                        if (index < shown) Clay else Slate.copy(alpha = 0.35f),
                     ),
             )
         }

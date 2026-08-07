@@ -18,7 +18,7 @@ object LockEnforcer {
      * Windows that are not app switches.
      *
      * System UI matters most: pulling down the notification shade or the quick-settings panel
-     * fires a window-state change, and treating that as "you left Instagram" would end the
+     * fires a window-state change, and treating that as "you left WhatsApp" would end the
      * session and re-lock the app the moment the shade closed.
      */
     private val NOT_AN_APP_SWITCH = setOf(
@@ -29,10 +29,20 @@ object LockEnforcer {
         "com.google.android.inputmethod.latin",
     )
 
-    fun handle(context: Context, packageName: String) {
+    private val LOCK_SCREEN_CLASS = LockActivity::class.java.name
+
+    fun handle(context: Context, packageName: String, className: String? = null) {
         if (packageName.isBlank()) return
         if (packageName in NOT_AN_APP_SWITCH) return
-        if (packageName == context.packageName) return
+
+        // AppLock can protect itself, so its own package is no longer blanket-exempt — only the
+        // lock screen is. Locking the lock screen would recurse forever.
+        if (packageName == context.packageName && className == LOCK_SCREEN_CLASS) return
+
+        // Belt to the class-name braces: the usage-stats fallback carries no class name, so
+        // without this a degraded-mode poll could still start a lock over a lock. It also stops
+        // two detectors racing to launch the same lock screen twice.
+        if (ServiceLocator.lockScreenVisible) return
 
         if (!ServiceLocator.lockGate.onForegroundPackage(packageName)) return
 

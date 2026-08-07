@@ -28,7 +28,8 @@ class InstalledAppsRepository(context: Context) {
             .asSequence()
             .mapNotNull { resolveInfo ->
                 val appInfo = resolveInfo.activityInfo?.applicationInfo ?: return@mapNotNull null
-                if (appInfo.packageName == appContext.packageName) return@mapNotNull null
+                // AppLock is deliberately *not* filtered out: it can protect itself, so that
+                // nobody can reach the settings and switch protection off without your PIN.
                 InstalledApp(
                     packageName = appInfo.packageName,
                     label = resolveInfo.loadLabel(packageManager).toString(),

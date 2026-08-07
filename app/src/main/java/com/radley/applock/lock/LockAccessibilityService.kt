@@ -10,16 +10,25 @@ import android.view.accessibility.AccessibilityEvent
  * moment it happens, rather than up to a poll interval later. That difference is the whole
  * user-visible quality of an app lock: poll-based lockers show a flash of the protected app.
  *
- * This service reads exactly one field — the package name on a window-state change. It does
- * not request `canRetrieveWindowContent`, so it is not able to read screen text, form fields
- * or anything the user types, even in principle.
+ * This service reads exactly two fields — the package and class name carried on a window-state
+ * change. It does not request `canRetrieveWindowContent`, so it is not able to read screen
+ * text, form fields or anything the user types, even in principle.
  */
 class LockAccessibilityService : AccessibilityService() {
+
+    private val windowFilter by lazy { ActivityWindowFilter.from(this) }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val packageName = event.packageName?.toString() ?: return
-        LockEnforcer.handle(this, packageName)
+        val className = event.className?.toString()
+
+        // Toasts, dialogs and popups fire this event too, carrying the package of whoever
+        // raised them rather than whatever is actually on screen. Acting on those locks apps
+        // the user never opened. See ActivityWindowFilter.
+        if (!windowFilter.isForegroundActivity(packageName, className)) return
+
+        LockEnforcer.handle(this, packageName, className)
     }
 
     override fun onInterrupt() = Unit
