@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -68,6 +68,18 @@ jobs:
             echo "present=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Built as a step output rather than inline in the release body. GitHub's `a && b || c`
+      # is not a ternary: when b is an empty string it is falsy, so the expression falls
+      # through to c and every release gets the unsigned warning whether or not it is true.
+      - name: Compose the signing note
+        id: note
+        run: |
+          if [ "${{ steps.keystore.outputs.present }}" = "true" ]; then
+            echo "text=" >> "$GITHUB_OUTPUT"
+          else
+            echo "text=> [!WARNING] Built without a release keystore, so this APK is debug-signed and cannot upgrade over a properly signed install." >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Assemble release APK
         env:
           LATCH_KEYSTORE_PATH: ${{ steps.keystore.outputs.present == 'true' && format('{0}/latch-release.jks', runner.temp) || '' }}
@@ -109,4 +121,4 @@ jobs:
             devices you should also set the battery mode to **Unrestricted** or One UI will
             eventually stop protection without telling you.
 
-            ${{ steps.keystore.outputs.present == 'true' && '' || '> ⚠️ Built without a release keystore, so this APK is debug-signed and cannot upgrade over a properly signed install.' }}
+            ${{ steps.note.outputs.text }}
