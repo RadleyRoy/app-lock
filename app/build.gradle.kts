@@ -14,21 +14,21 @@ plugins {
  * we fall back to the debug key so `assembleRelease` still produces an installable APK
  * instead of failing.
  */
-val keystoreFile: File? = System.getenv("LATCH_KEYSTORE_PATH")
+val keystoreFile: File? = System.getenv("APPLOCK_KEYSTORE_PATH")
     ?.takeIf { it.isNotBlank() }
     ?.let(::File)
     ?.takeIf(File::exists)
 
 android {
-    namespace = "com.radley.latch"
+    namespace = "com.radley.applock"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.radley.latch"
+        applicationId = "com.radley.applock"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -38,9 +38,9 @@ android {
         if (keystoreFile != null) {
             create("release") {
                 storeFile = keystoreFile
-                storePassword = System.getenv("LATCH_KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("LATCH_KEY_ALIAS")
-                keyPassword = System.getenv("LATCH_KEY_PASSWORD")
+                storePassword = System.getenv("APPLOCK_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("APPLOCK_KEY_ALIAS")
+                keyPassword = System.getenv("APPLOCK_KEY_PASSWORD")
             }
         }
     }
@@ -60,7 +60,7 @@ android {
             signingConfig = if (keystoreFile != null) {
                 signingConfigs.getByName("release")
             } else {
-                logger.lifecycle("LATCH_KEYSTORE_PATH not set - signing release with the debug key.")
+                logger.lifecycle("APPLOCK_KEYSTORE_PATH not set - signing release with the debug key.")
                 signingConfigs.getByName("debug")
             }
         }

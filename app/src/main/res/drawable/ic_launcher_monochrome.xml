@@ -4,8 +4,11 @@
   the keyhole must be a genuine hole rather than a dark shape painted on top: shield outline
   and keyhole are one path with fillType="evenOdd", which subtracts the inner subpath.
 
-  The keyhole is drawn as a single union outline (circle arc + tapering stem) instead of two
-  overlapping shapes, because under evenOdd an overlap would flip back to filled.
+  The keyhole is a single union outline (circle arc + tapering stem) rather than two
+  overlapping shapes, because under evenOdd an overlap would flip back to filled. The stem
+  corners meet the circle at y = 500 + sqrt(40^2 - 30^2) = 526.46.
+
+  Geometry matches ic_launcher_foreground.xml at 1.0x — keep the two in step.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -16,5 +19,5 @@
     <path
         android:fillColor="#FF000000"
         android:fillType="evenOdd"
-        android:pathData="M512,210.4 L772,309.2 V530.2 C772,673.2 655,756.4 512,813.6 C369,756.4 252,673.2 252,530.2 V309.2 Z M473,530.8 A52,52 0 1,1 551,530.8 L540.6,621.2 Q512,644.6 483.4,621.2 Z" />
+        android:pathData="M512,280 L712,356 V526 C712,636 622,700 512,744 C402,700 312,636 312,526 V356 Z M482,526.46 A40,40 0 1,1 542,526.46 L534,596 Q512,614 490,596 Z" />
 </vector>

@@ -11,16 +11,16 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
--keep,includedescriptorclasses class com.radley.latch.**$$serializer { *; }
--keepclassmembers class com.radley.latch.** {
+-keep,includedescriptorclasses class com.radley.applock.**$$serializer { *; }
+-keepclassmembers class com.radley.applock.** {
     *** Companion;
 }
--keepclasseswithmembers class com.radley.latch.** {
+-keepclasseswithmembers class com.radley.applock.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
 # Entry points the framework instantiates by name from the manifest ----------
--keep class com.radley.latch.LatchApp { *; }
+-keep class com.radley.applock.AppLockApp { *; }
 -keep class * extends android.accessibilityservice.AccessibilityService { *; }
 -keep class * extends android.app.Service { *; }
 -keep class * extends android.content.BroadcastReceiver { *; }

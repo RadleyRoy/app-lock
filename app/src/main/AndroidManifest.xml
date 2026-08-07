@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-      No INTERNET permission, deliberately and permanently. Latch has nothing to send and
+      No INTERNET permission, deliberately and permanently. AppLock has nothing to send and
       should not be capable of sending it.
     -->
 
@@ -15,9 +15,6 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-
-    <!-- To list installed apps in the picker. -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
 
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -31,21 +28,37 @@
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
+    <!--
+      Package visibility for the app picker.
+
+      Deliberately NOT QUERY_ALL_PACKAGES. InstalledAppsRepository queries by
+      ACTION_MAIN/CATEGORY_LAUNCHER, so visibility of exactly those activities is all this app
+      has ever needed. QUERY_ALL_PACKAGES is one of the strongest signals Play Protect weighs
+      when deciding a sideloaded app looks like spyware, and asking for total visibility to
+      read a launcher list was never justified.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
-        android:name=".LatchApp"
+        android:name=".AppLockApp"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Latch">
+        android:theme="@style/Theme.AppLock">
 
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Latch">
+            android:theme="@style/Theme.AppLock">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -65,7 +78,7 @@
             android:noHistory="false"
             android:showOnLockScreen="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Latch.Lock" />
+            android:theme="@style/Theme.AppLock.Lock" />
 
         <service
             android:name=".lock.LockAccessibilityService"

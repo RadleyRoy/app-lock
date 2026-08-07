@@ -5,7 +5,7 @@
       background so there is no white flash before the first frame draws. Parenting on the
       platform Material theme keeps AppCompat out of the dependency graph entirely.
     -->
-    <style name="Theme.Latch" parent="@android:style/Theme.Material.NoActionBar">
+    <style name="Theme.AppLock" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/ink</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
@@ -14,7 +14,7 @@
     </style>
 
     <!-- The lock window: no transitions, so it appears instantly over the protected app. -->
-    <style name="Theme.Latch.Lock" parent="Theme.Latch">
+    <style name="Theme.AppLock.Lock" parent="Theme.AppLock">
         <item name="android:windowAnimationStyle">@null</item>
         <item name="android:windowDisablePreview">true</item>
     </style>

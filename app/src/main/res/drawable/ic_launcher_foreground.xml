@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Adaptive foreground: shield + keyhole, recoloured from the placeholder cyan
-  (#45E6FF -> #2E77F2) to the Latch palette (Taupe #C6B9B2 -> Clay #965F4E).
+  (#45E6FF -> #2E77F2) to the AppLock palette (Taupe #C6B9B2 -> Clay #965F4E).
 
-  Geometry is the source SVG scaled 1.30x about the layer centre and recentred on the
-  shield's own centroid (y=552 -> 512). At that scale the furthest vertex sits 330px from
-  centre, inside the 341px adaptive safe-zone radius (66.6% of the 1024 viewport), so the
-  shield survives both One UI's circle and squircle masks without clipping.
+  Scale: 1.0x. Only the shield's centroid moves (y 552 -> 512) to sit on the layer centre;
+  the artwork is otherwise unscaled.
+
+  v1.0.0 scaled this 1.30x and looked visibly cropped on device. Only the central 66.7% of a
+  108dp adaptive layer is ever displayed, so at 1.30x the shield filled ~88% of the *visible*
+  window and crowded the mask edge. Unscaled it is 464/1024 = 45% of the layer, or ~68% of the
+  visible window, which is the conventional proportion. The furthest vertex sits 254px from
+  centre, well inside the 341px safe radius, so it survives circle and squircle masks alike.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -15,13 +19,13 @@
     android:viewportWidth="1024"
     android:viewportHeight="1024">
 
-    <path android:pathData="M512,210.4 L772,309.2 V530.2 C772,673.2 655,756.4 512,813.6 C369,756.4 252,673.2 252,530.2 V309.2 Z">
+    <path android:pathData="M512,280 L712,356 V526 C712,636 622,700 512,744 C402,700 312,636 312,526 V356 Z">
         <aapt:attr name="android:fillColor">
             <gradient
-                android:startX="257.2"
-                android:startY="231.2"
-                android:endX="766.8"
-                android:endY="798"
+                android:startX="316"
+                android:startY="296"
+                android:endX="708"
+                android:endY="732"
                 android:type="linear">
                 <item android:offset="0" android:color="#FFC6B9B2" />
                 <item android:offset="1" android:color="#FF965F4E" />
@@ -31,9 +35,9 @@
 
     <!-- Keyhole, knocked through in the darkest warm tone rather than pure black. -->
     <path
-        android:pathData="M460,496.4 a52,52 0 1,0 104,0 a52,52 0 1,0 -104,0 Z"
+        android:pathData="M472,500 a40,40 0 1,0 80,0 a40,40 0 1,0 -80,0 Z"
         android:fillColor="#FF1A0F0B" />
     <path
-        android:pathData="M473,496.4 L551,496.4 L540.6,621.2 Q512,644.6 483.4,621.2 Z"
+        android:pathData="M482,500 L542,500 L534,596 Q512,614 490,596 Z"
         android:fillColor="#FF1A0F0B" />
 </vector>

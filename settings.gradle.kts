@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Latch"
+rootProject.name = "AppLock"
 include(":app")

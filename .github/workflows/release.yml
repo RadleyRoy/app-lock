@@ -64,7 +64,7 @@ jobs:
             echo "No KEYSTORE_BASE64 secret; falling back to the debug key."
             echo "present=false" >> "$GITHUB_OUTPUT"
           else
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/latch-release.jks"
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/applock-release.jks"
             echo "present=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -82,17 +82,17 @@ jobs:
 
       - name: Assemble release APK
         env:
-          LATCH_KEYSTORE_PATH: ${{ steps.keystore.outputs.present == 'true' && format('{0}/latch-release.jks', runner.temp) || '' }}
-          LATCH_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          LATCH_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          LATCH_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          APPLOCK_KEYSTORE_PATH: ${{ steps.keystore.outputs.present == 'true' && format('{0}/applock-release.jks', runner.temp) || '' }}
+          APPLOCK_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          APPLOCK_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          APPLOCK_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease --stacktrace
 
       - name: Name the artifact
         id: artifact
         run: |
           SRC=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          DEST="latch-${{ steps.version.outputs.version }}.apk"
+          DEST="applock-${{ steps.version.outputs.version }}.apk"
           cp "$SRC" "$DEST"
           echo "path=$DEST" >> "$GITHUB_OUTPUT"
 
@@ -103,20 +103,20 @@ jobs:
 
       - name: Remove the keystore
         if: always()
-        run: rm -f "$RUNNER_TEMP/latch-release.jks"
+        run: rm -f "$RUNNER_TEMP/applock-release.jks"
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: Latch ${{ steps.version.outputs.version }}
+          name: AppLock ${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: ${{ steps.artifact.outputs.path }}
           body: |
             Install by downloading the APK below and opening it on your phone. You will need
             to allow installing from unknown sources.
 
-            After installing, open Latch and work through the setup wizard — the accessibility
+            After installing, open AppLock and work through the setup wizard — the accessibility
             and overlay grants are both required for locking to work at all, and on Samsung
             devices you should also set the battery mode to **Unrestricted** or One UI will
             eventually stop protection without telling you.
