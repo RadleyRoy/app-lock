@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  canRetrieveWindowContent is deliberately false: the service only needs the package name
+  carried on the event itself. Leaving it false means the app is structurally incapable of
+  reading screen text or keystrokes, which matters for something you are asked to trust with
+  an always-on accessibility grant.
+
+  notificationTimeout="0" because any delay here is a visible delay before the lock appears.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="0"
+    android:summary="@string/accessibility_service_summary" />

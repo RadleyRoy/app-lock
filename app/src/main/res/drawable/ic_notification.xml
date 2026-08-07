@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Status-bar icons are rendered as a silhouette: only the alpha channel survives, so this is a
+  solid white shield with the keyhole punched out via evenOdd rather than painted over.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,2 L20,5 V12 C20,17 16.5,19.8 12,22 C7.5,19.8 4,17 4,12 V5 Z M10.6,12.2 A2,2 0 1,1 13.4,12.2 L13,17 Q12,17.8 11,17 Z" />
+</vector>
