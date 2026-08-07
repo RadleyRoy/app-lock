@@ -47,15 +47,25 @@ class LockWatchService : LifecycleService() {
 
     private var lastForegroundPackage: String? = null
 
-    private val screenOffReceiver = object : BroadcastReceiver() {
+    private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
-                // Unconditional: every app re-locks, whatever its individual policy said.
-                ServiceLocator.sessions.onScreenOff()
-                lastForegroundPackage = null
-                // Last line of defence for the shield: if one is somehow still up when the
-                // screen goes off, it must not be there when the screen comes back.
-                OverlayShield.hide()
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    // Unconditional: every app re-locks, whatever its individual policy said.
+                    ServiceLocator.sessions.onScreenOff()
+                    lastForegroundPackage = null
+                    // Last line of defence for the shield: if one is somehow still up when the
+                    // screen goes off, it must not be there when the screen comes back.
+                    OverlayShield.hide()
+                }
+
+                Intent.ACTION_SCREEN_ON -> {
+                    // Drops the foreground belief only. Whatever was on screen before the
+                    // display slept must not still be handing an app "do not interrupt"
+                    // immunity now.
+                    ServiceLocator.sessions.onScreenOn()
+                    lastForegroundPackage = null
+                }
             }
         }
     }
@@ -63,7 +73,13 @@ class LockWatchService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         startForegroundWithNotification()
-        registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+        registerReceiver(
+            screenReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+            },
+        )
         startWatchLoop()
     }
 
@@ -80,21 +96,33 @@ class LockWatchService : LifecycleService() {
     }
 
     override fun onDestroy() {
-        runCatching { unregisterReceiver(screenOffReceiver) }
+        runCatching { unregisterReceiver(screenReceiver) }
         super.onDestroy()
     }
 
     private fun startWatchLoop() = lifecycleScope.launch {
         while (isActive) {
             val accessibilityOn = AppLockPermissions.isAccessibilityEnabled(this@LockWatchService)
+            val usageAccess = AppLockPermissions.hasUsageAccess(this@LockWatchService)
             when {
                 accessibilityOn -> {
-                    // The event-driven path is handling detection; just re-check occasionally.
                     lastForegroundPackage = null
-                    delay(ACCESSIBILITY_HEALTHCHECK_MILLIS)
+
+                    // While a timed session is live, the "do not interrupt an app that is on
+                    // screen" rule is deciding whether a countdown applies — and the window
+                    // events that rule is built on can be filtered, delayed or reordered. If
+                    // usage access happens to be granted, correct the belief from ground truth
+                    // rather than trusting it. Costs nothing on the default setting, because
+                    // "until screen off" is not a timed session.
+                    if (usageAccess && ServiceLocator.sessions.hasTimedSession()) {
+                        ServiceLocator.sessions.reconcileForeground(currentForegroundApp())
+                        delay(RECONCILE_INTERVAL_MILLIS)
+                    } else {
+                        delay(ACCESSIBILITY_HEALTHCHECK_MILLIS)
+                    }
                 }
 
-                AppLockPermissions.hasUsageAccess(this@LockWatchService) -> {
+                usageAccess -> {
                     pollForegroundApp()
                     delay(POLL_INTERVAL_MILLIS)
                 }
@@ -102,6 +130,25 @@ class LockWatchService : LifecycleService() {
                 else -> delay(NO_PERMISSION_BACKOFF_MILLIS)
             }
         }
+    }
+
+    /** The real foreground package according to usage stats, or null if it cannot be read. */
+    private fun currentForegroundApp(): String? {
+        val manager = usageStatsManager ?: return null
+        val end = System.currentTimeMillis()
+        val events = runCatching { manager.queryEvents(end - RECONCILE_WINDOW_MILLIS, end) }
+            .getOrNull() ?: return null
+
+        val seen = buildList {
+            val event = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
+                    add(ForegroundEvent(event.packageName, event.timeStamp))
+                }
+            }
+        }
+        return resolver.resolve(seen)
     }
 
     private fun pollForegroundApp() {
@@ -178,6 +225,13 @@ class LockWatchService : LifecycleService() {
         private const val POLL_INTERVAL_MILLIS = 250L
         private const val POLL_WINDOW_MILLIS = 2_000L
         private const val ACCESSIBILITY_HEALTHCHECK_MILLIS = 30_000L
+
+        /**
+         * Only runs while a timed session is live, so this is bounded by the chosen duration
+         * rather than being an always-on poll.
+         */
+        private const val RECONCILE_INTERVAL_MILLIS = 750L
+        private const val RECONCILE_WINDOW_MILLIS = 10_000L
         private const val NO_PERMISSION_BACKOFF_MILLIS = 10_000L
 
         fun start(context: Context) {

@@ -235,7 +235,7 @@ class LockActivity : FragmentActivity() {
     }
 
     private fun unlock() {
-        ServiceLocator.sessions.grant(targetPackage, ServiceLocator.relockPolicy)
+        ServiceLocator.sessions.grant(targetPackage, ServiceLocator.relockRule)
         OverlayShield.hide()
         // No success screen: dismiss the moment auth returns. Theme.AppLock.Lock nulls the
         // window animation, so there is nothing to override here.

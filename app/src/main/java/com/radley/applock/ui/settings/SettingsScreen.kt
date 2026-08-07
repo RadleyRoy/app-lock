@@ -32,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.radley.applock.lock.IntruderPolicy
 import com.radley.applock.lock.RelockPolicy
+import com.radley.applock.lock.RelockRule
+import com.radley.applock.lock.RelockTrigger
 import com.radley.applock.ui.theme.Ash
 import com.radley.applock.ui.theme.Bone
 import com.radley.applock.ui.theme.Clay
@@ -43,12 +45,14 @@ import com.radley.applock.ui.theme.Surface1
 @Composable
 fun SettingsScreen(
     protectionEnabled: Boolean,
-    relockPolicy: RelockPolicy,
+    relockRule: RelockRule,
     intruderThreshold: Int,
     randomizeKeypad: Boolean,
     intruderCount: Int,
+    appVersion: String,
     onProtectionEnabledChange: (Boolean) -> Unit,
     onRelockPolicyChange: (RelockPolicy) -> Unit,
+    onRelockTriggerChange: (RelockTrigger) -> Unit,
     onIntruderThresholdChange: (Int) -> Unit,
     onRandomizeKeypadChange: (Boolean) -> Unit,
     onChangePin: () -> Unit,
@@ -83,7 +87,7 @@ fun SettingsScreen(
 
         SettingCard {
             Text(
-                "How soon a protected app locks again after you leave it. The clock starts when you switch away, never while you are still using it.",
+                "How long an unlock lasts before AppLock asks again.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Ash,
                 modifier = Modifier.padding(bottom = 12.dp),
@@ -91,8 +95,44 @@ fun SettingsScreen(
             RelockPolicy.entries.forEach { policy ->
                 ChoiceRow(
                     label = policy.displayName(),
-                    selected = policy == relockPolicy,
+                    selected = policy == relockRule.policy,
                     onClick = { onRelockPolicyChange(policy) },
+                )
+            }
+        }
+
+        // Only meaningful for a real countdown: with "Immediately" and "When the screen turns
+        // off" both starting points behave identically, and offering a choice that changes
+        // nothing is worse than not offering it.
+        if (relockRule.policy.isTimed) {
+            val duration = relockRule.policy.displayName().lowercase()
+
+            SettingCard {
+                Text(
+                    "When the clock starts",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Bone,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "AppLock never locks an app while it is on screen. Either way, you are only " +
+                        "asked again the next time you open it.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ash,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+
+                TriggerRow(
+                    label = "When I open the app",
+                    detail = "The unlock expires $duration after you unlock, however long you stay in the app.",
+                    selected = relockRule.trigger == RelockTrigger.ON_UNLOCK,
+                    onClick = { onRelockTriggerChange(RelockTrigger.ON_UNLOCK) },
+                )
+                TriggerRow(
+                    label = "When I leave the app",
+                    detail = "The unlock expires $duration after you switch away. Staying in the app keeps it alive.",
+                    selected = relockRule.trigger == RelockTrigger.ON_LEAVING,
+                    onClick = { onRelockTriggerChange(RelockTrigger.ON_LEAVING) },
                 )
             }
         }
@@ -139,13 +179,41 @@ fun SettingsScreen(
             TextButton(onClick = onChangePin) { Text("Change PIN", color = Clay) }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Section("About")
 
-        Text(
-            "AppLock has no internet permission. Nothing it records can leave this device.",
-            style = MaterialTheme.typography.labelSmall,
-            color = Slate,
-        )
+        SettingCard {
+            Text("AppLock", style = MaterialTheme.typography.titleLarge, color = Bone)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "Version $appVersion",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Ash,
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            Text(
+                "Created by Radley",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Clay,
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            Text(
+                "AppLock has no internet permission. Nothing it records can leave this device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Ash,
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            Text(
+                "github.com/RadleyRoy/app-lock",
+                style = MaterialTheme.typography.labelSmall,
+                color = Slate,
+            )
+        }
 
         Spacer(Modifier.height(40.dp))
     }
@@ -180,7 +248,43 @@ private fun RelockPolicy.displayName(): String = when (this) {
     RelockPolicy.AFTER_30_SECONDS -> "After 30 seconds"
     RelockPolicy.AFTER_1_MINUTE -> "After 1 minute"
     RelockPolicy.AFTER_5_MINUTES -> "After 5 minutes"
+    RelockPolicy.AFTER_15_MINUTES -> "After 15 minutes"
     RelockPolicy.UNTIL_SCREEN_OFF -> "When the screen turns off"
+}
+
+@Composable
+private fun TriggerRow(
+    label: String,
+    detail: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (selected) Bone else Ash,
+            )
+            if (selected) Text("✓", color = Clay)
+        }
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Slate,
+            modifier = Modifier.padding(top = 2.dp, end = 24.dp),
+        )
+    }
 }
 
 @Composable

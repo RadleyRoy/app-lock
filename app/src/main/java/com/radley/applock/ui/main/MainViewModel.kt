@@ -8,6 +8,8 @@ import com.radley.applock.data.IntruderEvent
 import com.radley.applock.data.SuggestedApps
 import com.radley.applock.di.ServiceLocator
 import com.radley.applock.lock.RelockPolicy
+import com.radley.applock.lock.RelockRule
+import com.radley.applock.lock.RelockTrigger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,8 +49,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val protectionEnabled: StateFlow<Boolean> = settings.protectionEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
-    val relockPolicy: StateFlow<RelockPolicy> = settings.relockPolicy
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RelockPolicy.DEFAULT)
+    val relockRule: StateFlow<RelockRule> = settings.relockRule
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RelockRule.DEFAULT)
 
     val intruderThreshold: StateFlow<Int> = settings.intruderThreshold
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 3)
@@ -105,6 +107,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setRelockPolicy(policy: RelockPolicy) = viewModelScope.launch {
         settings.setRelockPolicy(policy)
+    }
+
+    fun setRelockTrigger(trigger: RelockTrigger) = viewModelScope.launch {
+        settings.setRelockTrigger(trigger)
     }
 
     fun setIntruderThreshold(threshold: Int) = viewModelScope.launch {

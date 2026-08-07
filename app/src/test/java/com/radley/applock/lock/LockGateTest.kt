@@ -15,6 +15,9 @@ class LockGateTest {
     private var enabled = true
 
     private val sessions = SessionManager(clock = { now })
+
+    /** These cases are about the gate, not the timing mode; ON_LEAVING keeps them unchanged. */
+    private fun rule(policy: RelockPolicy) = RelockRule(RelockTrigger.ON_LEAVING, policy)
     private val gate = LockGate(
         sessions = sessions,
         ownPackage = own,
@@ -47,13 +50,13 @@ class LockGateTest {
 
     @Test
     fun `an active session suppresses the lock`() {
-        sessions.grant(instagram, RelockPolicy.UNTIL_SCREEN_OFF)
+        sessions.grant(instagram, rule(RelockPolicy.UNTIL_SCREEN_OFF))
         assertFalse(gate.shouldLock(instagram))
     }
 
     @Test
     fun `it locks again once the session expires`() {
-        sessions.grant(instagram, RelockPolicy.AFTER_10_SECONDS)
+        sessions.grant(instagram, rule(RelockPolicy.AFTER_10_SECONDS))
         sessions.onForeground(instagram)
         sessions.onForeground("com.sec.android.app.launcher")
         now += 10_000
@@ -70,7 +73,7 @@ class LockGateTest {
 
     @Test
     fun `onForegroundPackage reports the decision and records the switch`() {
-        sessions.grant(instagram, RelockPolicy.IMMEDIATELY)
+        sessions.grant(instagram, rule(RelockPolicy.IMMEDIATELY))
 
         assertFalse(gate.onForegroundPackage(instagram), "just unlocked, should pass through")
         assertFalse(gate.onForegroundPackage(calculator), "not protected")
@@ -79,7 +82,7 @@ class LockGateTest {
 
     @Test
     fun `our own package coming forward does not end the protected app's session`() {
-        sessions.grant(instagram, RelockPolicy.IMMEDIATELY)
+        sessions.grant(instagram, rule(RelockPolicy.IMMEDIATELY))
         gate.onForegroundPackage(instagram)
 
         // The lock screen appearing must not count as "you left Instagram".

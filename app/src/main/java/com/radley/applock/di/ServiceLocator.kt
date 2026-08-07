@@ -6,7 +6,7 @@ import com.radley.applock.data.IntruderRepository
 import com.radley.applock.data.SettingsStore
 import com.radley.applock.lock.IntruderPolicy
 import com.radley.applock.lock.LockGate
-import com.radley.applock.lock.RelockPolicy
+import com.radley.applock.lock.RelockRule
 import com.radley.applock.lock.SessionManager
 
 /**
@@ -50,7 +50,7 @@ object ServiceLocator {
     var protectionEnabled: Boolean = true
 
     @Volatile
-    var relockPolicy: RelockPolicy = RelockPolicy.DEFAULT
+    var relockRule: RelockRule = RelockRule.DEFAULT
 
     @Volatile
     var intruderThreshold: Int = IntruderPolicy.DEFAULT_THRESHOLD

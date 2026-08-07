@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.radley.applock.BuildConfig
 import com.radley.applock.ui.apps.AppListScreen
 import com.radley.applock.ui.intruders.IntruderLogScreen
 import com.radley.applock.ui.onboarding.OnboardingScreen
@@ -130,19 +131,21 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
                 Tab.Settings -> {
                     val protection by viewModel.protectionEnabled.collectAsState()
-                    val policy by viewModel.relockPolicy.collectAsState()
+                    val rule by viewModel.relockRule.collectAsState()
                     val threshold by viewModel.intruderThreshold.collectAsState()
                     val randomize by viewModel.randomizeKeypad.collectAsState()
                     val events by viewModel.intruderEvents.collectAsState()
 
                     SettingsScreen(
                         protectionEnabled = protection,
-                        relockPolicy = policy,
+                        relockRule = rule,
                         intruderThreshold = threshold,
                         randomizeKeypad = randomize,
                         intruderCount = events.size,
+                        appVersion = BuildConfig.VERSION_NAME,
                         onProtectionEnabledChange = viewModel::setProtectionEnabled,
                         onRelockPolicyChange = viewModel::setRelockPolicy,
+                        onRelockTriggerChange = viewModel::setRelockTrigger,
                         onIntruderThresholdChange = viewModel::setIntruderThreshold,
                         onRandomizeKeypadChange = viewModel::setRandomizeKeypad,
                         onChangePin = { settingPin = true },

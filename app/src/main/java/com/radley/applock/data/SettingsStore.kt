@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.radley.applock.lock.IntruderPolicy
 import com.radley.applock.lock.RelockPolicy
+import com.radley.applock.lock.RelockRule
+import com.radley.applock.lock.RelockTrigger
 import com.radley.applock.security.PinHasher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -32,6 +34,7 @@ class SettingsStore(private val context: Context) {
         val LOCKED_PACKAGES = stringSetPreferencesKey("locked_packages")
         val PROTECTION_ENABLED = booleanPreferencesKey("protection_enabled")
         val RELOCK_POLICY = stringPreferencesKey("relock_policy")
+        val RELOCK_TRIGGER = stringPreferencesKey("relock_trigger")
         val INTRUDER_THRESHOLD = intPreferencesKey("intruder_threshold")
         val RANDOMIZE_KEYPAD = booleanPreferencesKey("randomize_keypad")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
@@ -44,8 +47,13 @@ class SettingsStore(private val context: Context) {
     val protectionEnabled: Flow<Boolean> =
         context.dataStore.data.map { it[Keys.PROTECTION_ENABLED] ?: true }
 
-    val relockPolicy: Flow<RelockPolicy> =
-        context.dataStore.data.map { RelockPolicy.fromNameOrDefault(it[Keys.RELOCK_POLICY]) }
+    /** Duration and clock-start are always read together, so they are exposed as one rule. */
+    val relockRule: Flow<RelockRule> = context.dataStore.data.map { prefs ->
+        RelockRule(
+            trigger = RelockTrigger.fromNameOrDefault(prefs[Keys.RELOCK_TRIGGER]),
+            policy = RelockPolicy.fromNameOrDefault(prefs[Keys.RELOCK_POLICY]),
+        )
+    }
 
     val intruderThreshold: Flow<Int> =
         context.dataStore.data.map { it[Keys.INTRUDER_THRESHOLD] ?: IntruderPolicy.DEFAULT_THRESHOLD }
@@ -78,6 +86,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setRelockPolicy(policy: RelockPolicy) {
         context.dataStore.edit { it[Keys.RELOCK_POLICY] = policy.name }
+    }
+
+    suspend fun setRelockTrigger(trigger: RelockTrigger) {
+        context.dataStore.edit { it[Keys.RELOCK_TRIGGER] = trigger.name }
     }
 
     suspend fun setIntruderThreshold(threshold: Int) {

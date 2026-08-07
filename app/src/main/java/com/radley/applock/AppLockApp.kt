@@ -29,7 +29,7 @@ class AppLockApp : Application() {
     private fun mirrorSettingsIntoMemory() = with(ServiceLocator) {
         settings.lockedPackages.onEach { lockedPackages = it }.launchIn(scope)
         settings.protectionEnabled.onEach { protectionEnabled = it }.launchIn(scope)
-        settings.relockPolicy.onEach { relockPolicy = it }.launchIn(scope)
+        settings.relockRule.onEach { relockRule = it }.launchIn(scope)
         settings.intruderThreshold.onEach { intruderThreshold = it }.launchIn(scope)
         settings.randomizeKeypad.onEach { randomizeKeypad = it }.launchIn(scope)
 
