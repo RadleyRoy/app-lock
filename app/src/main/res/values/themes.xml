@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Compose owns all in-app styling; this XML theme only needs to set the window
+      background so there is no white flash before the first frame draws. Parenting on the
+      platform Material theme keeps AppCompat out of the dependency graph entirely.
+    -->
+    <style name="Theme.Latch" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ink</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <!-- The lock window: no transitions, so it appears instantly over the protected app. -->
+    <style name="Theme.Latch.Lock" parent="Theme.Latch">
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+</resources>

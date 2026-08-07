@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Latch launcher icon — Dribbble palette.
+
+  Recoloured from applock_original_cyan.svg, whose README flagged the cyan/blue as a
+  placeholder pending the real reference palette:
+      shield   #45E6FF -> #2E77F2   becomes  #C6B9B2 -> #965F4E  (Taupe -> Clay)
+      keyhole  #08131F              becomes  #1A0F0B
+      ground   #1A1A1F -> #050506   becomes  #1A1512 -> #030303  (warm-shifted Ink)
+      shadow   #031024              becomes  #140805
+
+  This file is the editable master. The shipped Android asset is a VectorDrawable pair at
+  app/src/main/res/drawable/ic_launcher_{foreground,background}.xml, whose geometry is this
+  artwork scaled 1.30x about the centre and recentred for the adaptive safe zone.
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1A1512"/>
+      <stop offset="1" stop-color="#030303"/>
+    </linearGradient>
+    <linearGradient id="cy" x1="316" y1="336" x2="708" y2="772" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C6B9B2"/>
+      <stop offset="1" stop-color="#965F4E"/>
+    </linearGradient>
+    <filter id="sh" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#140805" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <g filter="url(#sh)">
+    <path d="M512 320 L712 396 V566 C712 676 622 740 512 784 C402 740 312 676 312 566 V396 Z"
+          fill="url(#cy)"/>
+  </g>
+
+  <circle cx="512" cy="540" r="40" fill="#1A0F0B"/>
+  <path d="M482 540 L542 540 L534 636 Q512 654 490 636 Z" fill="#1A0F0B"/>
+</svg>

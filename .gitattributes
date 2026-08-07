@@ -1,0 +1,13 @@
+# Normalise to LF in the repository. This matters for gradlew specifically: the CI runner is
+# Linux, and a CRLF shebang line makes it fail with "bad interpreter".
+* text=auto eol=lf
+
+*.bat text eol=crlf
+gradlew text eol=lf
+
+*.jar binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.keystore binary
+*.jks binary

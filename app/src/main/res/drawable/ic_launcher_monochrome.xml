@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Themed-icon layer (Android 13+ / One UI). The system tints this as a single silhouette, so
+  the keyhole must be a genuine hole rather than a dark shape painted on top: shield outline
+  and keyhole are one path with fillType="evenOdd", which subtracts the inner subpath.
+
+  The keyhole is drawn as a single union outline (circle arc + tapering stem) instead of two
+  overlapping shapes, because under evenOdd an overlap would flip back to filled.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M512,210.4 L772,309.2 V530.2 C772,673.2 655,756.4 512,813.6 C369,756.4 252,673.2 252,530.2 V309.2 Z M473,530.8 A52,52 0 1,1 551,530.8 L540.6,621.2 Q512,644.6 483.4,621.2 Z" />
+</vector>

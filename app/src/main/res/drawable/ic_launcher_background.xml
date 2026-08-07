@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Warm near-black gradient: the cyan icon's #1A1A1F -> #050506 shifted onto the Ink palette. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+
+    <path android:pathData="M0,0 H1024 V1024 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="1024"
+                android:endY="1024"
+                android:type="linear">
+                <item android:offset="0" android:color="#FF1A1512" />
+                <item android:offset="1" android:color="#FF030303" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

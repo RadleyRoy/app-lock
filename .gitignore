@@ -1,0 +1,28 @@
+# Signing material — NEVER commit these.
+# The release key is unrecoverable: lose it and no future build can upgrade an installed
+# APK in place. Keep a backup off this machine.
+*.jks
+*.keystore
+*.b64
+keystore.properties
+signing.properties
+
+# Android / Gradle
+*.iml
+.gradle/
+build/
+local.properties
+.cxx/
+captures/
+.externalNativeBuild/
+release/
+
+# IDE
+.idea/
+*.hprof
+.kotlin/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
